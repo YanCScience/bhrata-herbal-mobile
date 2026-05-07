@@ -11,6 +11,15 @@ class HomeController extends Controller
 {
     public function index()
     {
+        // If customer web is disabled, redirect appropriately
+        if (!config('app.customer_web_enabled', false)) {
+            // Admin goes to dashboard, everyone else to info page
+            if (auth()->check() && auth()->user()->isAdmin()) {
+                return redirect()->route('admin.dashboard');
+            }
+            return redirect()->route('customer.info');
+        }
+
         $featuredProducts = Product::with('categories')
             ->featured()
             ->availableForSale()

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Setting;
+use App\Services\ActivityLogger;
 use App\Services\ProductStockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -19,6 +20,13 @@ class ProductController extends Controller
     {
         $query = Product::with('categories');
 
+        // Handle showing archived products
+        if ($request->boolean('show_archived')) {
+            $query->onlyTrashed();
+        } else {
+            $query->withoutTrashed();
+        }
+
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
@@ -31,11 +39,27 @@ class ProductController extends Controller
             $query->where('status', $request->status);
         }
 
-        $products    = $query->latest()->paginate(15)->withQueryString();
+        // Sorting logic
+        $sortByOption = $request->input('sort_by', 'terbaru');
+        $sortOrder = $request->input('sort_order', 'desc');
+        
+        match ($sortByOption) {
+            'nama_asc' => $query->orderBy('name', 'asc'),
+            'nama_desc' => $query->orderBy('name', 'desc'),
+            'stok_asc' => $query->orderBy('stock', 'asc'),
+            'stok_desc' => $query->orderBy('stock', 'desc'),
+            'harga_asc' => $query->orderBy('price', 'asc'),
+            'harga_desc' => $query->orderBy('price', 'desc'),
+            default => $query->latest(),
+        };
+
+        $products    = $query->paginate(15)->withQueryString();
         $categories  = Category::all();
         $stockSummary = $this->stockService->getStockSummary();
+        $showArchived = $request->boolean('show_archived');
+        $archivedCount = Product::onlyTrashed()->count();
 
-        return view('admin.products.index', compact('products', 'categories', 'stockSummary'));
+        return view('admin.products.index', compact('products', 'categories', 'stockSummary', 'sortByOption', 'showArchived', 'archivedCount'));
     }
 
     public function create()
@@ -75,6 +99,9 @@ class ProductController extends Controller
         $product = Product::create($data);
         $product->categories()->sync($request->categories);
 
+        // Log activity
+        ActivityLogger::logProductCreate($product);
+
         return redirect()->route('admin.products.index')
             ->with('success', 'Produk berhasil ditambahkan.');
     }
@@ -112,8 +139,14 @@ class ProductController extends Controller
             $data['image'] = $request->file('image')->store('products', 'public');
         }
 
+        $changes = array_diff_assoc($data, $product->getOriginal());
         $product->update($data);
         $product->categories()->sync($request->categories);
+
+        // Log activity
+        if (!empty($changes)) {
+            ActivityLogger::logProductUpdate($product, $changes);
+        }
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Produk berhasil diperbarui.');
@@ -121,10 +154,36 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
-        if ($product->image) Storage::disk('public')->delete($product->image);
         $product->delete();
+        
+        // Log activity
+        ActivityLogger::logProductArchive($product);
+        
+        return back()->with('success', 'Produk berhasil diarsipkan.');
+    }
 
-        return back()->with('success', 'Produk berhasil dihapus.');
+    public function restore($id)
+    {
+        $product = Product::withTrashed()->findOrFail($id);
+        $product->restore();
+        
+        // Log activity
+        ActivityLogger::logProductRestore($product);
+        
+        return redirect()->route('admin.products.index')
+            ->with('success', 'Produk berhasil dipulihkan.');
+    }
+
+    public function permanentDelete($id)
+    {
+        $product = Product::withTrashed()->findOrFail($id);
+        if ($product->image) Storage::disk('public')->delete($product->image);
+        $product->forceDelete();
+        
+        // Log activity
+        ActivityLogger::logProductDelete($product);
+        
+        return back()->with('success', 'Produk berhasil dihapus permanen dari sistem.');
     }
 
     public function updateStock(Request $request, Product $product)
@@ -144,5 +203,67 @@ class ProductController extends Controller
                 'status' => $product->status,
             ],
         ]);
+    }
+
+    public function export(Request $request)
+    {
+        $query = Product::with('categories');
+
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('category')) {
+            $query->whereHas('categories', fn($q) => $q->where('categories.id', $request->category));
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $products = $query->get();
+
+        $filename = 'produk_' . now()->format('Ymd_His') . '.csv';
+        $headers = ['Content-Type' => 'text/csv; charset=UTF-8'];
+
+        $callback = function () use ($products) {
+            $handle = fopen('php://output', 'w');
+
+            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            fputcsv($handle, [
+                'ID',
+                'Nama Produk',
+                'Kategori',
+                'Harga (Rp)',
+                'Harga Diskon (Rp)',
+                'Stok',
+                'Status',
+                'Unggulan',
+                'Terlaris',
+                'Tanggal Dibuat',
+            ]);
+
+            foreach ($products as $product) {
+                $categories = $product->categories->pluck('name')->implode(', ');
+
+                fputcsv($handle, [
+                    $product->id,
+                    $product->name,
+                    $categories ?: '-',
+                    number_format($product->price, 0, ',', '.'),
+                    $product->discount_price ? number_format($product->discount_price, 0, ',', '.') : '-',
+                    $product->stock,
+                    ucfirst($product->status) === 'Active' ? 'Aktif' : ($product->status === 'warning' ? 'Peringatan' : 'Nonaktif'),
+                    $product->is_featured ? 'Ya' : 'Tidak',
+                    $product->is_bestseller ? 'Ya' : 'Tidak',
+                    $product->created_at->format('d/m/Y H:i'),
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->streamDownload($callback, $filename, $headers);
     }
 }

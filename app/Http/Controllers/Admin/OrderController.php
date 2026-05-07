@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderTracking;
 use App\Models\Setting;
+use App\Services\ActivityLogger;
 use App\Services\OrderEventNotificationService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -126,6 +127,9 @@ class OrderController extends Controller
             app(OrderEventNotificationService::class)->notify('order_completed', $order);
         }
 
+        // Log activity
+        ActivityLogger::logOrderStatusUpdate($order, $previousStatus, $request->status);
+
         return back()->with('success', 'Status pesanan berhasil diperbarui.');
     }
 
@@ -190,6 +194,61 @@ class OrderController extends Controller
         return response()->streamDownload($callback, $filename, $headers);
     }
 
+    public function bulkUpdateStatus(Request $request)
+    {
+        $request->validate([
+            'order_ids' => 'required|array|min:1',
+            'order_ids.*' => 'exists:orders,id',
+            'status' => 'required|in:pending,paid,processing,shipped,completed,cancelled',
+        ]);
+
+        $orderIds = $request->order_ids;
+        $newStatus = $request->status;
+
+        $orders = Order::whereIn('id', $orderIds)->get();
+
+        foreach ($orders as $order) {
+            $previousStatus = $order->status;
+
+            $order->update(['status' => $newStatus]);
+
+            if ($newStatus === 'paid' && $order->payment && $previousStatus !== 'paid') {
+                $order->payment->update(['status' => 'verified', 'paid_at' => now()]);
+                app(OrderEventNotificationService::class)->notify('payment_confirmed', $order);
+            }
+
+            if ($newStatus === 'shipped' && $previousStatus !== 'shipped') {
+                if ($order->trackingUpdates()->doesntExist()) {
+                    $this->generateTrackingTimeline($order);
+                }
+                app(OrderEventNotificationService::class)->notify('order_shipped', $order);
+            }
+
+            if ($newStatus === 'completed' && $previousStatus !== 'completed') {
+                app(OrderEventNotificationService::class)->notify('order_completed', $order);
+            }
+
+            // Log activity
+            ActivityLogger::logOrderStatusUpdate($order, $previousStatus, $newStatus);
+        }
+
+        $count = count($orders);
+        return back()->with('success', "Status {$count} pesanan berhasil diperbarui ke '{$this->getStatusLabel($newStatus)}'.");
+    }
+
+    private function getStatusLabel($status)
+    {
+        return match($status) {
+            'pending' => 'Belum Dibayar',
+            'paid' => 'Dibayar',
+            'processing' => 'Diproses',
+            'shipped' => 'Dikirim',
+            'completed' => 'Selesai',
+            'cancelled' => 'Dibatalkan',
+            default => $status,
+        };
+    }
+
     private function generateTrackingTimeline(Order $order): void
     {
         $sellerCity = $this->resolveSellerCity();
@@ -242,17 +301,44 @@ class OrderController extends Controller
             'jne' => 'jne',
             'j&t express', 'jnt', 'j&t' => 'jnt',
             'sicepat' => 'sicepat',
-          
             default => null,
         };
+        return now()->addDays($fallbackDays);
+    }
 
-        $estimateDays = $code
-            ? max((int) Setting::get('shipping', "courier_{$code}_days", $fallbackDays), 1)
-            : $fallbackDays;
+    /**
+     * API untuk polling pesanan baru
+     * GET /admin/api/new-orders-count
+     */
+    public function checkNewOrders(Request $request)
+    {
+        $lastCheck = $request->query('last_check', now()->subMinutes(30)->timestamp);
+        $lastCheckTime = \Carbon\Carbon::createFromTimestamp($lastCheck);
 
-        $variance = rand(-1, 1);
-        $finalDays = max(1, $estimateDays + $variance);
+        // Count pesanan baru sejak last check
+        $newOrdersCount = Order::where('created_at', '>', $lastCheckTime)
+                              ->where('status', 'pending')
+                              ->count();
 
-        return now('Asia/Jakarta')->copy()->addDays($finalDays)->setTime(18, 0);
+        // Ambil data pesanan baru untuk ditampilkan di toast
+        $newOrders = Order::where('created_at', '>', $lastCheckTime)
+                         ->where('status', 'pending')
+                         ->latest()
+                         ->limit(3)
+                         ->get(['id', 'user_id', 'total', 'created_at'])
+                         ->load('user:id,name');
+
+        // Simpan last check ke session
+        session(['admin_last_check_orders' => now()->timestamp]);
+
+        return response()->json([
+            'success' => true,
+            'count' => $newOrdersCount,
+            'orders' => $newOrders,
+            'message' => $newOrdersCount > 0 
+                ? "🛒 Ada {$newOrdersCount} pesanan baru!" 
+                : null,
+        ]);
     }
 }
+

@@ -33,4 +33,12 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    // ════════════════════════════════════════════════════════════════════════
+    // 🔵 CUSTOMER WEB ACCESS TOGGLE
+    // Control whether customer web interface is accessible
+    // When false: customer web routes are disabled, shows info page instead
+    // When true: customer web routes are enabled (for testing/backward compatibility)
+    // ════════════════════════════════════════════════════════════════════════
+    'customer_web_enabled' => env('CUSTOMER_WEB_ENABLED', false),
+
 ];

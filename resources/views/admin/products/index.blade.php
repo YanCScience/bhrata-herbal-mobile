@@ -3,8 +3,27 @@
 <x-slot name="subtitle">Kelola seluruh produk herbal yang tersedia di toko</x-slot>
 
 {{-- ═══════════════════════════════════════
-  SEARCH + STATS ROW
+  ARCHIVE TOGGLE + SEARCH + STATS ROW
 ═══════════════════════════════════════ --}}
+@if($archivedCount > 0)
+<div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
+    <div class="flex items-center gap-2">
+        <i data-lucide="archive" class="w-4 h-4 text-amber-600"></i>
+        <span class="text-sm text-amber-800">{{ $archivedCount }} produk dalam arsip</span>
+    </div>
+    @if($showArchived)
+    <a href="{{ route('admin.products.index') }}" class="btn btn-green">
+        ← Kembali ke Produk Aktif
+    </a>
+    @else
+    <a href="{{ route('admin.products.index', array_merge(request()->query(), ['show_archived' => 1])) }}"
+       class="text-sm text-amber-700 hover:text-amber-800 font-semibold">
+        Lihat Arsip
+    </a>
+    @endif
+</div>
+@endif
+
 <div class="flex flex-col sm:flex-row gap-4 mb-6">
 
     {{-- Search --}}
@@ -53,14 +72,23 @@
         </select>
     </form>
 
-    {{-- Add Button --}}
-    <a href="{{ route('admin.products.create') }}"
-       class="flex items-center gap-2 px-5 py-3 bg-green-900 hover:bg-green-800 text-white
-              text-sm font-semibold rounded-xl shadow-sm transition-all hover:shadow-md
-              active:scale-95 whitespace-nowrap">
-        <i data-lucide="plus" class="w-4 h-4"></i>
-        Tambah Produk
-    </a>
+    {{-- Export & Add Buttons --}}
+    <div class="flex items-center gap-2">
+        <a href="{{ route('admin.products.export', request()->query()) }}"
+           class="flex items-center gap-2 px-5 py-3 bg-blue-900 hover:bg-blue-800 text-white
+                  text-sm font-semibold rounded-xl shadow-sm transition-all hover:shadow-md
+                  active:scale-95 whitespace-nowrap">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Export CSV
+        </a>
+        <a href="{{ route('admin.products.create') }}"
+           class="flex items-center gap-2 px-5 py-3 bg-green-900 hover:bg-green-800 text-white
+                  text-sm font-semibold rounded-xl shadow-sm transition-all hover:shadow-md
+                  active:scale-95 whitespace-nowrap">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            Tambah Produk
+        </a>
+    </div>
 </div>
 
 {{-- ═══════════════════════════════════════
@@ -113,57 +141,55 @@
 
     {{-- Scrollable Table --}}
     <div class="overflow-x-auto">
-        <table class="w-full text-sm">
+        <table class="admin-table">
             <thead>
-                <tr class="bg-gray-50 border-b border-gray-100">
-                    <th class="text-left px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">ID</th>
-                    <th class="text-left px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Produk</th>
-                    <th class="text-left px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Kategori</th>
-                    <th class="text-left px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Stok</th>
-                    <th class="text-left px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Harga</th>
-                    <th class="text-left px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-3.5 text-xs font-bold text-gray-500 uppercase tracking-wider text-center">Aksi</th>
+                <tr>
+                    <th class="w-12">ID</th>
+                    <th>Produk</th>
+                    <th>Kategori</th>
+                    <th>Stok</th>
+                    <th>Harga</th>
+                    <th>Status</th>
+                    <th class="text-center">Aksi</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-50">
+            <tbody>
                 @forelse ($products as $product)
-                <tr class="hover:bg-gray-50/70 transition-colors group">
+                <tr>
 
                     {{-- ID --}}
-                    <td class="px-6 py-4">
-                        <span class="font-mono text-xs text-gray-400">
-                           
-                        </span>
+                    <td>
+                        <span class="font-mono text-xs text-gray-400">#{{ $product->id }}</span>
                     </td>
 
                     {{-- Produk --}}
-                    <td class="px-6 py-4">
+                    <td>
                         <div class="flex items-center gap-3">
                             {{-- Thumbnail --}}
                             @if($product->image)
                                 <img src="{{ Storage::url($product->image) }}"
                                      alt="{{ $product->name }}"
-                                     class="w-11 h-11 rounded-xl object-cover border border-gray-100 shrink-0">
+                                     class="w-10 h-10 rounded-xl object-cover border border-gray-100 shrink-0">
                             @else
-                                <div class="w-11 h-11 rounded-xl bg-green-50 border border-green-100
+                                <div class="w-10 h-10 rounded-xl bg-green-50 border border-green-100
                                             flex items-center justify-center shrink-0">
-                                    <i data-lucide="leaf" class="w-5 h-5 text-green-400"></i>
+                                    <i data-lucide="leaf" class="w-4 h-4 text-green-400"></i>
                                 </div>
                             @endif
                             {{-- Name --}}
                             <div class="min-w-0">
-                                <p class="font-semibold text-gray-900 truncate max-w-[200px]">
+                                <p class="font-semibold text-gray-900 truncate max-w-[180px] text-sm">
                                     {{ $product->name }}
                                 </p>
                                 <div class="flex items-center gap-1.5 mt-0.5">
                                     @if($product->is_featured)
-                                    <span class="inline-flex items-center gap-1 text-xs text-amber-600 font-medium">
-                                        <i data-lucide="star" class="w-3 h-3"></i>Unggulan
+                                    <span class="inline-flex items-center gap-0.5 text-xs text-amber-600 font-medium">
+                                        <i data-lucide="star" class="w-2.5 h-2.5"></i>Unggulan
                                     </span>
                                     @endif
                                     @if($product->is_bestseller)
-                                    <span class="inline-flex items-center gap-1 text-xs text-green-600 font-medium">
-                                        <i data-lucide="trending-up" class="w-3 h-3"></i>Terlaris
+                                    <span class="inline-flex items-center gap-0.5 text-xs text-green-600 font-medium">
+                                        <i data-lucide="trending-up" class="w-2.5 h-2.5"></i>Terlaris
                                     </span>
                                     @endif
                                 </div>
@@ -172,13 +198,10 @@
                     </td>
 
                     {{-- Kategori --}}
-                    <td class="px-6 py-4">
-                        <div class="flex flex-wrap gap-1 max-w-[160px]">
+                    <td>
+                        <div class="flex flex-wrap gap-1 max-w-[140px]">
                             @forelse($product->categories as $cat)
-                                <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium
-                                             bg-green-100 text-green-800">
-                                    {{ $cat->name }}
-                                </span>
+                                <span class="badge badge-green text-[10px] px-2 py-0.5">{{ $cat->name }}</span>
                             @empty
                                 <span class="text-gray-300 text-xs">—</span>
                             @endforelse
@@ -186,7 +209,7 @@
                     </td>
 
                     {{-- Stok --}}
-                    <td class="px-6 py-4">
+                    <td>
                         @if($product->stock > 50)
                             <div class="flex items-center gap-1.5">
                                 <div class="w-1.5 h-1.5 rounded-full bg-green-500"></div>
@@ -208,57 +231,69 @@
                     </td>
 
                     {{-- Harga --}}
-                    <td class="px-6 py-4">
+                    <td>
                         @if($product->discount_price)
-                            <p class="font-bold text-gray-900">
+                            <p class="font-bold text-gray-900 text-sm">
                                 Rp {{ number_format($product->discount_price, 0, ',', '.') }}
                             </p>
                             <p class="text-xs text-gray-400 line-through">
                                 Rp {{ number_format($product->price, 0, ',', '.') }}
                             </p>
                         @else
-                            <p class="font-bold text-gray-900">
+                            <p class="font-bold text-gray-900 text-sm">
                                 Rp {{ number_format($product->price, 0, ',', '.') }}
                             </p>
                         @endif
                     </td>
 
                     {{-- Status --}}
-                    <td class="px-6 py-4">
+                    <td>
                         @if($product->status === 'active')
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                                <span class="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span> Aktif
+                            <span class="badge badge-green">
+                                <span class="badge-dot bg-green-500"></span> Aktif
                             </span>
                         @elseif($product->status === 'warning')
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
-                                <span class="w-1.5 h-1.5 bg-yellow-500 rounded-full inline-block animate-pulse"></span> Peringatan Stok
+                            <span class="badge badge-yellow">
+                                <span class="badge-dot bg-yellow-500 animate-pulse"></span> Peringatan
                             </span>
                         @else
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                                <span class="w-1.5 h-1.5 bg-red-500 rounded-full inline-block"></span> Nonaktif
+                            <span class="badge badge-red">
+                                <span class="badge-dot bg-red-500"></span> Nonaktif
                             </span>
                         @endif
                     </td>
 
                     {{-- Aksi --}}
-                    <td class="px-6 py-4">
-                        <div class="flex items-center justify-center gap-1">
-                            <a href="{{ route('admin.products.edit', $product) }}"
-                               title="Edit Produk"
-                               class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-blue-100 flex items-center justify-center
-                                      transition-all hover:scale-105">
-                                <i data-lucide="pencil" class="w-3.5 h-3.5 text-gray-500 group-hover:text-blue-600"></i>
-                            </a>
-                            <form action="{{ route('admin.products.destroy', $product) }}" method="POST"
-                                  onsubmit="return confirm('Hapus produk \'{{ addslashes($product->name) }}\'?\nTindakan ini tidak dapat dibatalkan.')">
-                                @csrf @method('DELETE')
-                                <button type="submit"
-                                        title="Hapus Produk"
-                                        class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-red-100 flex items-center justify-center
-                                               transition-all hover:scale-105">
-                                    <i data-lucide="trash" class="w-3.5 h-3.5 text-gray-500 hover:text-red-600"></i>
-                                </button>
-                            </form>
+                    <td>
+                        <div class="flex items-center justify-center gap-1.5">
+                            @if($showArchived)
+                                <form action="{{ route('admin.products.restore', $product->id) }}" method="POST"
+                                      onsubmit="return confirm('Kembalikan produk \'{{ addslashes($product->name) }}\' dari arsip?')">
+                                    @csrf
+                                    <button type="submit" title="Kembalikan" class="btn-icon-green">
+                                        <i data-lucide="undo" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </form>
+                                <form action="{{ route('admin.products.permanent-delete', $product->id) }}" method="POST"
+                                      onsubmit="return confirm('Hapus permanen produk \'{{ addslashes($product->name) }}\'?\nTindakan ini TIDAK DAPAT DIBATALKAN!')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" title="Hapus Permanen" class="btn-icon-danger">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </form>
+                            @else
+                                <a href="{{ route('admin.products.edit', $product) }}"
+                                   title="Edit" class="btn-icon-blue">
+                                    <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                                </a>
+                                <form action="{{ route('admin.products.destroy', $product) }}" method="POST"
+                                      onsubmit="return confirm('Arsipkan produk \'{{ addslashes($product->name) }}\'?\nProduk masih dapat dipulihkan kemudian.')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" title="Arsipkan" class="btn-icon-orange">
+                                        <i data-lucide="archive" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </form>
+                            @endif
                         </div>
                     </td>
                 </tr>

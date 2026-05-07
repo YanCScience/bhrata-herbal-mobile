@@ -10,11 +10,15 @@ return new class extends Migration
     public function up(): void
     {
        
-        Schema::table('users', function (Blueprint $table) {
-            $table->timestamp('last_login')->nullable()->after('role');
-        });
+        if (! Schema::hasColumn('users', 'last_login')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->timestamp('last_login')->nullable()->after('role');
+            });
+        }
 
-        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('customer', 'admin', 'super_admin') DEFAULT 'customer'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('customer', 'admin', 'super_admin') DEFAULT 'customer'");
+        }
     }
 
     public function down(): void
@@ -22,6 +26,8 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('last_login');
         });
-        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('customer', 'admin') DEFAULT 'customer'");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('customer', 'admin') DEFAULT 'customer'");
+        }
     }
 };

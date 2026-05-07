@@ -8,12 +8,7 @@
 
             {{-- Logo --}}
             <a href="{{ route('home') }}" class="flex items-center gap-2 shrink-0">
-                <div class="w-9 h-9 bg-herbal-800 rounded-lg flex items-center justify-center">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                    </svg>
-                </div>
+                <img src="{{ asset('images/logo-bharata.jpeg') }}" alt="Logo" class="w-10 h-10 rounded-xl object-cover shadow-sm border border-gray-100">
                 <span class="font-bold text-herbal-800 text-lg tracking-tight">{{ $brandParts[0] ?? 'Bharata' }}<span class="text-herbal-500">{{ isset($brandParts[1]) ? ' ' . $brandParts[1] : '' }}</span></span>
             </a>
 

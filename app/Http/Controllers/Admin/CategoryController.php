@@ -23,7 +23,15 @@ class CategoryController extends Controller
             'icon'        => 'nullable|string|max:50',
         ]);
         $data['slug'] = Str::slug($data['name']);
-        Category::create($data);
+        $category = Category::create($data);
+        
+        $this->logActivity(
+            'Tambah Kategori',
+            "Kategori '{$category->name}' ditambahkan",
+            'Category',
+            $category->id
+        );
+        
         return back()->with('success', 'Kategori berhasil ditambahkan.');
     }
 
@@ -36,12 +44,29 @@ class CategoryController extends Controller
         ]);
         $data['slug'] = Str::slug($data['name']);
         $category->update($data);
+        
+        $this->logActivity(
+            'Edit Kategori',
+            "Kategori '{$category->name}' diperbarui",
+            'Category',
+            $category->id
+        );
+        
         return back()->with('success', 'Kategori berhasil diperbarui.');
     }
 
     public function destroy(Category $category)
     {
+        $categoryName = $category->name;
         $category->delete();
+        
+        $this->logActivity(
+            'Hapus Kategori',
+            "Kategori '{$categoryName}' dihapus",
+            'Category',
+            $category->id
+        );
+        
         return back()->with('success', 'Kategori berhasil dihapus.');
     }
 }

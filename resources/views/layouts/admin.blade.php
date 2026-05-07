@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? 'Admin' }} — Bharata Herbal</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="icon" type="image/jpeg" href="/images/logo-bharata.jpeg">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="//unpkg.com/alpinejs" defer></script>
@@ -32,9 +33,11 @@
              class="flex flex-col h-full">
 
             {{-- Logo --}}
-            <div class="p-5 flex items-center gap-3 border-b border-white/10">
-                <i data-lucide="leaf" class="w-6 h-6 text-green-400"></i>
-                <h1 class="font-semibold text-lg tracking-wide">Bharata Herbal</h1>
+            <div class="px-4 py-3 flex items-center gap-2.5 border-b border-white/10">
+                <img src="{{ asset('images/logo-bharata.jpeg') }}"
+                     alt="Logo Bharata Herbal"
+                     class="h-10 w-10 rounded-full object-cover ring-2 ring-green-400/40 shrink-0">
+                <h1 class="font-semibold text-base tracking-wide leading-tight">Bharata Herbal</h1>
             </div>
 
             {{-- Menu utama --}}
@@ -76,6 +79,13 @@
                     <i data-lucide="bar-chart-3" class="w-5 h-5 shrink-0"></i> Laporan Penjualan
                 </a>
 
+                <a href="{{ route('admin.activity-logs.index') }}"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                          {{ request()->routeIs('admin.activity-logs*') ? 'bg-green-800/60 border-l-4 border-green-400 pl-2' : 'hover:bg-white/5' }}">
+                    <i data-lucide="activity" class="w-5 h-5 shrink-0"></i>
+                    Aktivitas Log
+                </a>
+
                 {{-- Divider: Keamanan --}}
                 <div class="px-3 pt-4 pb-1">
                     <p class="text-[10px] font-semibold uppercase tracking-widest text-white/30">Keamanan</p>
@@ -100,6 +110,15 @@
                           {{ request()->routeIs('admin.sessions*') ? 'bg-green-800/60 border-l-4 border-green-400 pl-2' : 'hover:bg-white/5' }}">
                     <i data-lucide="monitor" class="w-5 h-5 shrink-0"></i> Sesi Aktif
                 </a>
+
+                @if(auth()->user()->isSuperAdmin())
+                <a href="{{ route('admin.activity-logs.index') }}"
+                   class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition
+                          {{ request()->routeIs('admin.activity-logs*') ? 'bg-green-800/60 border-l-4 border-green-400 pl-2' : 'hover:bg-white/5' }}">
+                    <i data-lucide="clipboard-list" class="w-5 h-5 shrink-0"></i>
+                    Aktivitas Log
+                </a>
+                @endif
 
             </nav>
 
@@ -201,6 +220,7 @@
                     <span class="ml-auto text-[10px] bg-purple-600/50 border border-purple-500/30 rounded-full px-1.5 py-0.5">SA</span>
                 </a>
                 @endif
+
 
             </nav>
         </div>
@@ -339,21 +359,39 @@
             </div>
         </header>
 
-        {{-- ── GLOBAL FLASH ── --}}
+        {{-- ── GLOBAL FLASH MESSAGES ── --}}
         @if(session('success'))
-        <div class="mx-6 mt-4 flex items-center gap-2 bg-green-50 border border-green-200 text-green-800 text-sm px-4 py-3 rounded-xl">
-            <svg class="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-            </svg>
-            {{ session('success') }}
+        <div class="flash-alert-success animate-in fade-in slide-in-from-top-2 duration-300 mx-6 mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-l-4 border-green-500 rounded-lg shadow-md flex items-start gap-3">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-green-800">{{ session('success') }}</p>
+            </div>
+            <button type="button" class="flex-shrink-0 inline-flex text-green-600 hover:text-green-800 transition" onclick="this.parentElement.remove()">
+                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                </svg>
+            </button>
         </div>
         @endif
         @if(session('error'))
-        <div class="mx-6 mt-4 flex items-center gap-2 bg-red-50 border border-red-200 text-red-800 text-sm px-4 py-3 rounded-xl">
-            <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-            {{ session('error') }}
+        <div class="flash-alert-error animate-in fade-in slide-in-from-top-2 duration-300 mx-6 mt-4 p-4 bg-gradient-to-r from-red-50 to-rose-50 border-l-4 border-red-500 rounded-lg shadow-md flex items-start gap-3">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-red-800">{{ session('error') }}</p>
+            </div>
+            <button type="button" class="flex-shrink-0 inline-flex text-red-600 hover:text-red-800 transition" onclick="this.parentElement.remove()">
+                <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                </svg>
+            </button>
         </div>
         @endif
 
@@ -368,10 +406,38 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+// Auto-dismiss untuk flash alert messages
+document.addEventListener('DOMContentLoaded', function() {
     if (typeof lucide !== 'undefined') lucide.createIcons();
+    
+    // Auto-dismiss success alerts setelah 5 detik
+    const successAlerts = document.querySelectorAll('.flash-alert-success');
+    successAlerts.forEach(function(alert) {
+        setTimeout(function() {
+            alert.style.transition = 'all 0.5s ease-out';
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-10px)';
+            setTimeout(function() {
+                alert.remove();
+            }, 500);
+        }, 5000);
+    });
+    
+    // Auto-dismiss error alerts setelah 6 detik
+    const errorAlerts = document.querySelectorAll('.flash-alert-error');
+    errorAlerts.forEach(function(alert) {
+        setTimeout(function() {
+            alert.style.transition = 'all 0.5s ease-out';
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-10px)';
+            setTimeout(function() {
+                alert.remove();
+            }, 500);
+        }, 6000);
+    });
 });
 </script>
+<script src="/push-manager.js" defer></script>
 @stack('scripts')
 </body>
 </html>

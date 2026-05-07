@@ -55,17 +55,20 @@
                     @error('categories')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
                 </div>
 
-                <div>
-                    <label class="form-label">Gambar Produk</label>
-                    @if (isset($product) && $product->image)
-                        <div class="mb-3">
-                            <img src="{{ Storage::url($product->image) }}" alt="Current" class="w-32 h-32 object-cover rounded-xl border border-gray-200">
-                            <p class="text-xs text-gray-400 mt-1">Gambar saat ini. Upload baru untuk mengganti.</p>
-                        </div>
-                    @endif
-                    <input type="file" name="image" accept="image/*" class="form-input py-2">
-                    @error('image')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                </div>
+                @php
+                    $currentImageUrl = null;
+                    if (isset($product) && $product->image) {
+                        $currentImageUrl = \Illuminate\Support\Facades\Storage::url($product->image);
+                    }
+                @endphp
+
+                <x-forms.drag-drop-upload 
+                    name="image" 
+                    label="Gambar Produk"
+                    accept="image/*"
+                    maxSize="2048"
+                    :currentImage="$currentImageUrl"
+                />
 
                 <div class="flex gap-6">
                     <label class="flex items-center gap-2 cursor-pointer">

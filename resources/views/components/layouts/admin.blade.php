@@ -5,11 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="#1f5233">
+    <meta name="description" content="Dashboard Admin Panel untuk mengelola sistem e-commerce Bharata Herbal">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%231f5233' width='180' height='180'/><text x='50%' y='50%' font-size='80' font-weight='bold' text-anchor='middle' dominant-baseline='middle' fill='white' font-family='Arial'>BH</text></svg>">
     <title>{{ $title ?? 'Admin' }} — Bharata Herbal</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('pwa.css') }}">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="//unpkg.com/alpinejs" defer></script>
+    <script src="{{ asset('notifications.js') }}"></script>
+    <script src="{{ asset('notifications-polling.js') }}"></script>
+    <script src="{{ asset('pwa.js') }}"></script>
 </head>
 
 <body class="bg-gray-50 font-sans antialiased">
@@ -31,7 +39,7 @@
 
                 {{-- LOGO --}}
                 <div class="p-5 flex items-center gap-3 border-b border-white/10">
-                    <i data-lucide="leaf" class="w-6 h-6 text-green-400"></i>
+                    <img src="{{ asset('images/logo-bharata.jpeg') }}" alt="Logo" class="w-8 h-8 rounded-lg object-cover">
                     <h1 class="font-semibold text-lg tracking-wide">Bharata Herbal</h1>
                 </div>
 
@@ -127,6 +135,24 @@
                     </div>
 
                     <div class="flex items-center gap-3">
+                        <!-- PWA Install Button -->
+                        <button id="pwaInstallBtn" title="Install dashboard sebagai aplikasi"
+                            class="flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                            <span>Install</span>
+                        </button>
+
+                        <!-- Notification Permission Button -->
+                        <button id="notificationPermissionBtn" title="Aktifkan notifikasi untuk pesanan dan stok"
+                            class="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 1115 15.571V11a6 6 0 00-12 0v4.571A2.032 2.032 0 104.595 17H10m5 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                            </svg>
+                            <span>Notifikasi</span>
+                        </button>
+
                         <div class="relative" x-data="{ open: false }" @click.away="open = false">
                             <button @click="open = !open"
                                 class="flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm hover:bg-gray-50 transition">

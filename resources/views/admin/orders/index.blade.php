@@ -114,19 +114,55 @@
     @endif
 
     {{-- ═══════════════════════════════════════════════════════════════════
+    BULK ACTION BAR
+═══════════════════════════════════════════════════════════════════ --}}
+    <div id="bulkActionBar" class="mb-4 hidden bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <i data-lucide="check-square" class="w-5 h-5 text-blue-600"></i>
+            <span class="text-sm font-medium text-blue-900">
+                <span id="selectedCount">0</span> pesanan dipilih
+            </span>
+        </div>
+        <form id="bulkActionForm" method="POST" action="{{ route('admin.orders.bulk-update-status') }}" class="flex items-center gap-2">
+            @csrf
+            <select name="status" id="bulkStatusSelect" required
+                    class="px-3 py-2 text-sm bg-white border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">-- Ubah Status Ke --</option>
+                <option value="pending">Belum Dibayar</option>
+                <option value="paid">Dibayar</option>
+                <option value="processing">Diproses</option>
+                <option value="shipped">Dikirim</option>
+                <option value="completed">Selesai</option>
+                <option value="cancelled">Dibatalkan</option>
+            </select>
+            <button type="submit" class="px-4 py-2 text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                Terapkan
+            </button>
+            <button type="button" onclick="clearBulkSelection()" class="px-4 py-2 text-sm font-semibold bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                Batal
+            </button>
+        </form>
+    </div>
+
+    {{-- ═══════════════════════════════════════════════════════════════════
     ORDERS TABLE
 ═══════════════════════════════════════════════════════════════════ --}}
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+            <form id="bulkSelectionForm">
+                <table class="w-full text-sm">
 
-                {{-- THEAD --}}
-                <thead class="bg-gray-50 border-b border-gray-100">
-                    <tr>
-                        <th class="px-5 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
-                            No. Pesanan
-                        </th>
+                    {{-- THEAD --}}
+                    <thead class="bg-gray-50 border-b border-gray-100">
+                        <tr>
+                            <th class="px-4 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap w-10">
+                                <input type="checkbox" id="selectAllCheckbox" class="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600"
+                                       onchange="toggleSelectAll(this)">
+                            </th>
+                            <th class="px-5 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
+                                No. Pesanan
+                            </th>
                         <th class="px-5 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
                             Tanggal Order
                         </th>
@@ -183,18 +219,23 @@
                     $totalQty = $order->items->sum('quantity');
                     @endphp
 
-                    <tr class="hover:bg-green-50/30 transition-colors cursor-pointer group"
-                        onclick="window.location='{{ route('admin.orders.show', $order) }}'">
+                    <tr class="hover:bg-green-50/30 transition-colors group">
+
+                        {{-- Checkbox --}}
+                        <td class="px-4 py-4 whitespace-nowrap" onclick="event.stopPropagation();">
+                            <input type="checkbox" name="order_ids[]" value="{{ $order->id }}" class="w-4 h-4 cursor-pointer rounded border-gray-300 text-blue-600 order-checkbox"
+                                   onchange="updateBulkActionBar()">
+                        </td>
 
                         {{-- No. Pesanan --}}
-                        <td class="px-5 py-4 whitespace-nowrap">
+                        <td class="px-5 py-4 whitespace-nowrap cursor-pointer" data-href="{{ route('admin.orders.show', $order) }}">
                             <span class="font-mono font-bold text-green-800 text-[13px] tracking-wide">
                                 {{ $order->order_number }}
                             </span>
                         </td>
 
                         {{-- Tanggal Order --}}
-                        <td class="px-5 py-4 whitespace-nowrap">
+                        <td class="px-5 py-4 whitespace-nowrap cursor-pointer" data-href="{{ route('admin.orders.show', $order) }}">
                             <div class="text-gray-800 font-medium text-xs">
                                 {{ $order->created_at->format('d M Y') }}
                             </div>
@@ -204,7 +245,7 @@
                         </td>
 
                         {{-- Nama Customer --}}
-                        <td class="px-5 py-4 whitespace-nowrap">
+                        <td class="px-5 py-4 whitespace-nowrap cursor-pointer" data-href="{{ route('admin.orders.show', $order) }}">
                             <div class="flex items-center gap-2.5">
                                 <div class="w-8 h-8 rounded-full bg-green-100 text-green-800 font-bold text-xs
                                         flex items-center justify-center shrink-0 ring-1 ring-green-200">
@@ -222,7 +263,7 @@
                         </td>
 
                         {{-- Produk --}}
-                        <td class="px-5 py-4">
+                        <td class="px-5 py-4 cursor-pointer" data-href="{{ route('admin.orders.show', $order) }}">
                             <div class="flex flex-col gap-0.5 max-w-[200px]">
                                 @foreach ($itemsList as $item)
                                 <div class="flex items-center gap-1.5 min-w-0">
@@ -245,7 +286,7 @@
                         </td>
 
                         {{-- Status Badge --}}
-                        <td class="px-5 py-4 whitespace-nowrap">
+                        <td class="px-5 py-4 whitespace-nowrap cursor-pointer" data-href="{{ route('admin.orders.show', $order) }}">
                             <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ring-1
                                      {{ $sc['ring'] }}">
                                 <span class="w-1.5 h-1.5 rounded-full {{ $sc['dot'] }} inline-block"></span>
@@ -254,7 +295,7 @@
                         </td>
 
                         {{-- Total --}}
-                        <td class="px-5 py-4 whitespace-nowrap">
+                        <td class="px-5 py-4 whitespace-nowrap cursor-pointer" data-href="{{ route('admin.orders.show', $order) }}">
                             <div class="font-bold text-gray-900 text-sm">
                                 Rp {{ number_format($order->total_price, 0, ',', '.') }}
                             </div>
@@ -266,7 +307,7 @@
                         </td>
 
                         {{-- Pengiriman (Kurir) --}}
-                        <td class="px-5 py-4 whitespace-nowrap">
+                        <td class="px-5 py-4 whitespace-nowrap cursor-pointer" data-href="{{ route('admin.orders.show', $order) }}">
                             @if ($courier)
                             <div class="flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full {{ $courier['color'] }} shrink-0"></span>
@@ -278,7 +319,7 @@
                         </td>
 
                         {{-- Nomor Resi --}}
-                        <td class="px-5 py-4 whitespace-nowrap">
+                        <td class="px-5 py-4 whitespace-nowrap cursor-pointer" data-href="{{ route('admin.orders.show', $order) }}">
                             @if ($resi)
                             <span class="font-mono text-[12px] text-gray-700 bg-gray-100 px-2 py-0.5 rounded">
                                 {{ $resi }}
@@ -302,7 +343,7 @@
 
                     @empty
                     <tr>
-                        <td colspan="9" class="px-6 py-20 text-center">
+                        <td colspan="10" class="px-6 py-20 text-center">
                             <div class="flex flex-col items-center gap-3 text-gray-300">
                                 <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center">
                                     <i data-lucide="inbox" class="w-8 h-8 text-gray-300"></i>
@@ -345,7 +386,93 @@
         </div>
         @endif
 
+            </form>
     </div>
+
+    <script>
+    function toggleSelectAll(checkbox) {
+        const checkboxes = document.querySelectorAll('.order-checkbox');
+        checkboxes.forEach(cb => cb.checked = checkbox.checked);
+        updateBulkActionBar();
+    }
+
+    function updateBulkActionBar() {
+        const selectedCheckboxes = document.querySelectorAll('.order-checkbox:checked');
+        const bulkActionBar = document.getElementById('bulkActionBar');
+        const selectedCount = document.getElementById('selectedCount');
+        
+        if (selectedCheckboxes.length > 0) {
+            selectedCount.textContent = selectedCheckboxes.length;
+            bulkActionBar.classList.remove('hidden');
+        } else {
+            bulkActionBar.classList.add('hidden');
+        }
+    }
+
+    function clearBulkSelection() {
+        document.getElementById('selectAllCheckbox').checked = false;
+        const checkboxes = document.querySelectorAll('.order-checkbox');
+        checkboxes.forEach(cb => cb.checked = false);
+        updateBulkActionBar();
+    }
+
+    document.getElementById('bulkActionForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const selectedCheckboxes = document.querySelectorAll('.order-checkbox:checked');
+        if (selectedCheckboxes.length === 0) {
+            alert('Silakan pilih minimal satu pesanan');
+            return false;
+        }
+        
+        if (!document.getElementById('bulkStatusSelect').value) {
+            alert('Silakan pilih status yang akan diterapkan');
+            return false;
+        }
+
+        // Collect selected order IDs
+        const orderIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+        
+        // Create hidden inputs for order_ids
+        const form = this;
+        
+        // Remove existing hidden inputs first
+        form.querySelectorAll('input[name="order_ids[]"]').forEach(input => input.remove());
+        
+        // Add new hidden inputs
+        orderIds.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'order_ids[]';
+            input.value = id;
+            form.appendChild(input);
+        });
+        
+        // Now submit the form
+        form.submit();
+    });
+
+    // Make table rows clickable (except checkbox cell)
+    document.querySelectorAll('tbody tr').forEach(row => {
+        row.addEventListener('click', function(e) {
+            // Don't navigate if clicking on checkbox
+            const clickedCell = e.target.closest('td');
+            if (!clickedCell) return;
+            
+            const checkbox = clickedCell.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                // Checkbox column clicked
+                return;
+            }
+            
+            // Check if any cell has data-href
+            const href = clickedCell.getAttribute('data-href');
+            if (href) {
+                window.location = href;
+            }
+        });
+    });
+    </script>
 
     {{-- ═══════════════════════════════════════════════════════════════════
     CUSTOM PAGINATION STYLE  (clean, green-themed)

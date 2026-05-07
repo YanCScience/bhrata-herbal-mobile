@@ -15,6 +15,16 @@ class CustomerController extends Controller
             ->withSum('orders', 'total_price')
             ->with('latestOrder');
 
+        // Segmentation filter
+        $segment = $request->input('segment', 'semua');
+        
+        match ($segment) {
+            'aktif' => $query->whereHas('orders'),
+            'tidak_aktif' => $query->whereDoesntHave('orders'),
+            'baru' => $query->whereDate('created_at', '>=', now()->subDays(30)),
+            default => null, // semua - no additional filter
+        };
+
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%')
@@ -34,8 +44,12 @@ class CustomerController extends Controller
 
         $customers = $query->paginate(15)->withQueryString();
 
+        // Calculate segment counts
         $totalCustomers  = User::where('role', 'customer')->count();
         $activeCustomers = User::where('role', 'customer')->whereHas('orders')->count();
+        $inactiveCustomers = User::where('role', 'customer')->whereDoesntHave('orders')->count();
+        $newCustomers = User::where('role', 'customer')->whereDate('created_at', '>=', now()->subDays(30))->count();
+        
         $totalOrders     = \App\Models\Order::count();
         $totalRevenue    = \App\Models\Order::where('status', '!=', 'cancelled')->sum('total_price');
         $newThisMonth    = User::where('role', 'customer')->whereMonth('created_at', now()->month)->count();
@@ -44,9 +58,12 @@ class CustomerController extends Controller
             'customers',
             'totalCustomers',
             'activeCustomers',
+            'inactiveCustomers',
+            'newCustomers',
             'totalOrders',
             'totalRevenue',
-            'newThisMonth'
+            'newThisMonth',
+            'segment'
         ));
     }
 
@@ -75,12 +92,25 @@ class CustomerController extends Controller
                 'Total Pesanan',
                 'Total Belanja (Rp)',
                 'Terakhir Transaksi',
+                'Segmentasi',
                 'Status'
             ]);
 
             foreach ($customers as $index => $customer) {
                 $lastOrder = $customer->latestOrder;
                 $totalSpent = $customer->orders_sum_total_price ?? 0;
+                
+                // Determine segmentation
+                $isActive = $customer->orders_count > 0;
+                $isNew = $customer->created_at->addDays(30)->isFuture();
+                
+                if ($isNew) {
+                    $segment = 'Baru';
+                } elseif ($isActive) {
+                    $segment = 'Aktif';
+                } else {
+                    $segment = 'Tidak Aktif';
+                }
 
                 fputcsv($handle, [
                     $index + 1,
@@ -91,7 +121,8 @@ class CustomerController extends Controller
                     $customer->orders_count,
                     number_format($totalSpent, 0, ',', '.'),
                     $lastOrder ? $lastOrder->created_at->format('d/m/Y H:i') : '-',
-                    $customer->orders_count > 0 ? 'Aktif' : 'Tidak Aktif'
+                    $segment,
+                    $isActive ? 'Aktif' : 'Belum Order'
                 ]);
             }
 

@@ -74,6 +74,39 @@
     </div>
 </div>
 
+{{-- ===== SEGMENTATION FILTER TABS ===== --}}
+<div class="mb-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Filter Pelanggan</p>
+    <div class="flex flex-wrap gap-2">
+        @php
+            $segments = [
+                'semua' => ['label' => 'Semua Pelanggan', 'count' => $totalCustomers, 'icon' => 'users'],
+                'aktif' => ['label' => 'Pelanggan Aktif', 'count' => $activeCustomers, 'icon' => 'user-check'],
+                'tidak_aktif' => ['label' => 'Belum Order', 'count' => $inactiveCustomers, 'icon' => 'user-x'],
+                'baru' => ['label' => 'Pelanggan Baru', 'count' => $newCustomers, 'icon' => 'user-plus'],
+            ];
+        @endphp
+        
+        @foreach ($segments as $key => $seg)
+        @php
+            $isActive = ($segment === $key) || ($key === 'semua' && !$segment);
+        @endphp
+        <a href="{{ route('admin.customers.index', array_merge(request()->query(), ['segment' => $key])) }}"
+           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border
+                  {{ $isActive 
+                      ? 'bg-green-50 border-green-200 text-green-800 shadow-sm' 
+                      : 'bg-white border-gray-200 text-gray-600 hover:border-green-300 hover:text-green-800' }}">
+            <i data-lucide="{{ $seg['icon'] }}" class="w-4 h-4"></i>
+            <span>{{ $seg['label'] }}</span>
+            <span class="inline-flex items-center justify-center min-w-[24px] h-6 px-2 rounded-full text-xs font-bold
+                         {{ $isActive ? 'bg-green-700 text-green-50' : 'bg-gray-100 text-gray-600' }}">
+                {{ $seg['count'] }}
+            </span>
+        </a>
+        @endforeach
+    </div>
+</div>
+
 {{-- ===== TABLE CONTAINER ===== --}}
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
 
@@ -120,7 +153,7 @@
         </form>
 
         {{-- Export Button --}}
-        <a href="{{ route('admin.customers.index') }}?export=1"
+        <a href="{{ route('admin.customers.index', array_merge(request()->query(), ['export' => 1])) }}"
            class="flex items-center gap-2 px-5 py-2.5 bg-green-900 text-white text-sm font-semibold rounded-full hover:bg-green-800 transition-colors shadow-sm shrink-0">
             <i data-lucide="download" class="w-4 h-4"></i>
             Export Data
@@ -137,6 +170,7 @@
                     <th class="text-left px-6 py-4 text-xs font-bold text-green-800 uppercase tracking-wider">Total Pesanan</th>
                     <th class="text-left px-6 py-4 text-xs font-bold text-green-800 uppercase tracking-wider">Total Belanja</th>
                     <th class="text-left px-6 py-4 text-xs font-bold text-green-800 uppercase tracking-wider">Terakhir Transaksi</th>
+                    <th class="text-left px-6 py-4 text-xs font-bold text-green-800 uppercase tracking-wider">Segmentasi</th>
                     <th class="text-left px-6 py-4 text-xs font-bold text-green-800 uppercase tracking-wider">Status</th>
                     <th class="text-left px-6 py-4 text-xs font-bold text-green-800 uppercase tracking-wider">Aksi</th>
                 </tr>
@@ -148,6 +182,7 @@
                     $colors     = ['bg-green-100 text-green-700','bg-blue-100 text-blue-700','bg-purple-100 text-purple-700','bg-amber-100 text-amber-700','bg-rose-100 text-rose-700'];
                     $color      = $colors[$customer->id % count($colors)];
                     $isActive   = $customer->orders_count > 0;
+                    $isNew      = $customer->created_at->addDays(30)->isFuture();
                     $lastOrder  = $customer->latestOrder;
                 @endphp
                 <tr class="hover:bg-gray-50/80 transition-colors group">
@@ -199,6 +234,26 @@
                         @endif
                     </td>
 
+                    {{-- Segmentasi --}}
+                    <td class="px-6 py-4">
+                        @if ($isNew)
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                                <i data-lucide="user-plus" class="w-3 h-3"></i>
+                                Baru
+                            </span>
+                        @elseif ($isActive)
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                <i data-lucide="user-check" class="w-3 h-3"></i>
+                                Aktif
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
+                                <i data-lucide="user-x" class="w-3 h-3"></i>
+                                Tidak Aktif
+                            </span>
+                        @endif
+                    </td>
+
                     {{-- Status --}}
                     <td class="px-6 py-4">
                         @if ($isActive)
@@ -232,7 +287,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-20 text-center">
+                    <td colspan="8" class="px-6 py-20 text-center">
                         <div class="flex flex-col items-center gap-3 text-gray-400">
                             <i data-lucide="users" class="w-12 h-12 text-gray-200"></i>
                             <p class="font-semibold text-gray-500">Tidak ada pelanggan ditemukan</p>

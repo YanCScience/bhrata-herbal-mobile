@@ -24,12 +24,7 @@
             <div class="relative z-10 flex flex-col justify-center px-16 text-white">
                 {{-- Logo --}}
                 <a href="{{ route('home') }}" class="flex items-center gap-3 mb-16">
-                    <div class="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                        </svg>
-                    </div>
+                    <img src="{{ asset('images/logo-bharata.jpeg') }}" alt="Logo" class="w-16 h-16 rounded-2xl object-cover border-2 border-white/20 shadow-lg">
                     <div>
                         <span class="font-bold text-2xl tracking-tight">Bharata</span><span class="font-bold text-2xl text-emerald-300">Herbal</span>
                     </div>
@@ -65,12 +60,7 @@
             <div class="w-full max-w-md">
                 {{-- Mobile Logo --}}
                 <div class="lg:hidden flex items-center gap-3 mb-8 justify-center">
-                    <div class="w-10 h-10 bg-herbal-800 rounded-xl flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
-                        </svg>
-                    </div>
+                    <img src="{{ asset('images/logo-bharata.jpeg') }}" alt="Logo" class="w-12 h-12 rounded-xl object-cover shadow-sm">
                     <span class="font-bold text-xl text-herbal-800">Bharata<span class="text-herbal-500">Herbal</span></span>
                 </div>
 

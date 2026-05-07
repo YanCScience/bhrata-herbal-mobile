@@ -9,15 +9,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-           DB::statement('
-        DELETE s1 FROM settings s1
-        INNER JOIN settings s2
-        WHERE s1.id > s2.id
-        AND s1.group = s2.group
-        AND s1.key = s2.key
-    ');
-
-
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('DELETE s1 FROM settings s1 INNER JOIN settings s2 WHERE s1.id > s2.id AND s1.group = s2.group AND s1.key = s2.key');
+        } else {
+            DB::statement('DELETE FROM settings WHERE id NOT IN (SELECT MIN(id) FROM settings GROUP BY "group", "key")');
+        }
     }
 
     public function down(): void
