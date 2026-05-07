@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/product_model.dart';
+import '../config/api_config.dart';
 
 class ProductDetailScreen extends StatelessWidget {
   final Product product;
@@ -19,8 +20,7 @@ class ProductDetailScreen extends StatelessWidget {
     if (imagePath.startsWith('foto_bharata/')) {
       imagePath = imagePath.replaceFirst('foto_bharata/', '');
     }
-    final fullImageUrl =
-        'http://192.168.0.104:8000/foto_bharata/$imagePath?v=1';
+    final fullImageUrl = '${ApiConfig.baseImageUrl}/$imagePath?v=1';
 
     return Scaffold(
       backgroundColor: Colors.white,

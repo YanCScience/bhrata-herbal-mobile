@@ -8,6 +8,8 @@ import '../widgets/product_card.dart';
 import 'product_detail_screen.dart';
 import 'catalog_screen.dart';
 
+import '../config/api_config.dart';
+
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -365,7 +367,7 @@ class HomeScreen extends StatelessWidget {
                       imagePath = imagePath.replaceFirst('foto_bharata/', '');
                     }
                     final fullImageUrl =
-                        'http://10.0.2.2:8000/foto_bharata/$imagePath?v=1';
+                        '${ApiConfig.baseImageUrl}/$imagePath?v=1';
                     final formattedPrice = formatter.format(
                       int.parse(product.price.toString()),
                     );
